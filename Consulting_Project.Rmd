@@ -1,0 +1,69 @@
+---
+title: "Consulting_Project"
+author: "Alicia Kantor"
+date: "September 18, 2019"
+output: html_document
+---
+
+
+
+Model from his example
+```{r}
+library("readxl")
+Consult <- read_excel("Stats_Project_Percent_Cover_Ohsowski.xlsx")
+summary(Consult)
+#install.packages("lavaan")
+library("lavaan")
+
+# 1. Specify Model
+mod_ex <- 'Typha ~ waterDepth
+          utrmin ~ Typha
+          utrmin ~ waterDepth'
+
+#2. "fit" model
+mod_ex_fit <- sem(mod_ex, data = Consult)
+
+#3. extract results = estimates and assessment of fit
+summary(mod_ex_fit)
+
+# Got the error "some observed variances are (at least) a factor 1000 times larger than others; use varTable(fit) to investigate" so do this
+
+varTable(mod_ex_fit)
+
+# Redoing it with scaled data
+utr_2 <- Consult$utrmin *100
+waterDepth <- Consult$waterDepth
+Typha <- Consult$Typha
+ex_data <- data.frame(waterDepth, Typha, utr_2)
+
+mod_ex2 <- 'Typha ~ waterDepth
+          utr_2 ~ Typha
+          utr_2 ~ waterDepth'
+
+mod_ex_fit2 <- sem(mod_ex2, data = ex_data)
+summary(mod_ex_fit2)
+```
+
+Categorical: site, community, trmt, plot 
+Numerical: year, unVegCover, vegCover, waterDepth, Typha, potber, utrmin, utrvul
+```{r}
+library(ggplot2)
+library(ggpubr)
+# Things that should be evenly spread out
+ggplot(Consult, aes(site)) + geom_bar() + theme_pubclean()
+ggplot(Consult, aes(trmt)) + geom_bar() + theme_pubclean()
+ggplot(Consult, aes(pplot)) + geom_bar() + theme_pubclean()
+hist(Consult$year)
+
+# Checking other var distributions
+hist(Consult$unVegCover)
+hist(Consult$vegCover) # Distributed normally so use this over unVegCover
+hist(Consult$waterDepth) # Pretty normal
+hist(Consult$Typha) # Right skewed
+hist(Consult$potber) # Mostly zeroes
+hist(Consult$utrmin) # Mostly zeroes
+hist(Consult$utrvul) # Mostly zeroes but otherwise more evenly distributed
+
+# Look at cavtegorical vars vs these response vars
+
+```
