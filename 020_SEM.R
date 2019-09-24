@@ -34,3 +34,18 @@ mod.4 = 'waterDepth ~ year
         nonTypha ~ year + waterDepth + trmt_above + trmt_below + trmt_Mow'
 mod4 = sem(mod.4, data = Consult)
 summary(mod4)
+
+
+#after talking with Brian
+mod.5 = 'waterDepth ~ year
+        potber ~ waterDepth + trmt_above + trmt_below + trmt_Mow
+        potber ~ Typha
+        potber ~ year'
+mod5 = sem(mod.5, data = Consult)
+summary(mod5)
+
+mod.6 = 'waterDepth ~ year
+        Typha ~ trmt_above + trmt_below + trmt_Mow + year
+        potber ~ Typha'
+mod6 = sem(mod.6, data = Consult)
+summary(mod6)
