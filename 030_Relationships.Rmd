@@ -1,0 +1,76 @@
+---
+title: "Relationships"
+author: "Alicia Kantor"
+date: "September 24, 2019"
+output: html_document
+---
+
+
+########################################################## after talking with Brian
+mod.5 = 'waterDepth ~ year
+        potber ~ waterDepth + trmt_above + trmt_below + trmt_Mow
+        potber ~ Typha
+        potber ~ year'
+mod5 = sem(mod.5, data = Consult)
+summary(mod5)
+
+mod.6 = 'waterDepth ~ year
+        Typha ~ trmt_above + trmt_below + trmt_Mow + year
+        potber ~ Typha'
+mod6 = sem(mod.6, data = Consult)
+summary(mod6)
+
+######################################################### New
+Assumption 1: Linear relationships
+Plots of responses vs explanatory vars
+Responses I am looking at:
+*Didn't look at plot yet
+
+waterDepth ~ year
+Typha ~ trmt_above + trmt_below + trmt_Mow
+Typha ~ year
+potber ~ Typha
+potber ~ year
+utrmin ~ Typha
+utrmin ~ year
+utrvul ~ Typha
+utrvul ~ year
+potber ~ waterDepth
+utrmin ~ waterDepth
+utrvul ~ waterDepth
+
+```{r}
+
+plot(year, waterDepth) # Water depth in 2011 differs from water depth in 2012 and 2013
+# Not necessarily linear
+library(ggplot2)
+library(dplyr)
+
+ggplot(data = Consult) + (mapping = aes(x = trmt, y = Typha)) + geom_col() # Cutting above, below, or mowing definitely has an effect on the Typha
+
+plot(year, Typha) # 2012 and 2013 have less Typha than 2011
+
+plot(Typha, potber)
+pot_no_zero <- lapply(potber,function(x) x[x!=0])
+plot(Typha, pot_no_zero) # Could be exponentially distibuted with a large lambda, but there are zeros so this won't work. Could be polynomial then. 
+
+
+plot(year, potber) # Doesn't look like year has much of an effect
+
+plot(Typha, utrmin) # Definitely a decrease in utrmin as Typha increases. Maybe linear. 
+
+plot(year, utrmin) # 2011 is only year with varying levels
+
+plot(Typha, utrvul) # Lots of dispersion, no clear trend
+
+plot(year, utrvul) # Year definietly has an effect on utrvul
+
+plot(waterDepth, potber) # No clear pattern
+
+plot(waterDepth, utrmin) # No clear pattern
+
+plot(waterDepth, utrvul) # more utrvul as waterDepth increases. Could definitely have a linear relationship. 
+
+```
+Assumption 2: Normally distributed responses
+
