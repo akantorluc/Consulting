@@ -1,0 +1,30 @@
+---
+title: "Relationships"
+author: "Alicia Kantor"
+date: "September 24, 2019"
+output: html_document
+---
+
+#after talking with Brian
+mod.5 = 'waterDepth ~ year
+        potber ~ waterDepth + trmt_above + trmt_below + trmt_Mow
+        potber ~ Typha
+        potber ~ year'
+mod5 = sem(mod.5, data = Consult)
+summary(mod5)
+
+mod.6 = 'waterDepth ~ year
+        Typha ~ trmt_above + trmt_below + trmt_Mow + year
+        potber ~ Typha'
+mod6 = sem(mod.6, data = Consult)
+summary(mod6)
+
+
+Plots of responses vs explanatory vars
+Responses I am looking at:
+
+waterDepth ~ year
+Typha ~ trmt_above + trmt_below + trmt_Mow + year
+potber ~ Typha
+potber ~ year
+
