@@ -40,7 +40,7 @@ utrmin ~ waterDepth
 utrvul ~ waterDepth
 
 ```{r}
-
+attach(Consult)
 plot(year, waterDepth) # Water depth in 2011 differs from water depth in 2012 and 2013
 # Not necessarily linear
 library(ggplot2)
