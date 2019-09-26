@@ -48,21 +48,21 @@ mod.51 = 'waterDepth ~ year
 mod51 = sem(mod.51, data = Consult, estimator = "mlm")
 summary(mod51)
 
-
+# trmt_yes is in models 6-8 instead of individual treatments. Got better p-values. 
 mod.6 = 'waterDepth ~ year
-        Typha ~ trmt_above + trmt_below + trmt_Mow
+        Typha ~ trmt_yes +year
         potber ~ Typha + year'
 mod6 = sem(mod.6, data = Consult, estimator = "mlm")
 summary(mod6)
 
 mod.7 = 'waterDepth ~ year
-        Typha ~ trmt_above + trmt_below + trmt_Mow + year
+        Typha ~ trmt_yes + year
         utrmin ~ Typha'
 mod7 = sem(mod.7, data = Consult, estimator = "mlm")
 summary(mod7)
 
 mod.8 = 'waterDepth ~ year
-        Typha ~ trmt_above + trmt_below + trmt_Mow + year
+        Typha ~ trmt_yes + year
         utrvul ~ Typha'
 mod8 = sem(mod.8, data = Consult, estimator = "mlm")
 summary(mod8)

@@ -9,9 +9,6 @@ output: html_document
 
 Model from his example
 ```{r}
-library("readxl")
-Consult <- read_excel("C:/Users/Brad/Documents/Stat488_consulting/Stats_Project_Percent_Cover_Ohsowski.xlsx")
-summary(Consult)
 #install.packages("lavaan")
 library("lavaan")
 
