@@ -12,4 +12,11 @@ Consult = Consult %>%
 #divided it by 10 to be at teh same scal as teh otehr variables
 Consult = Consult %>% mutate(Typha = Typha/10, waterDepth = waterDepth/10)
 
+#main data set
 save(Consult, file="Consult_data.Rdata")
+
+
+#data sets per year
+consult_2011 = Consult %>% dplyr::filter(year == 2011)
+consult_2012 = Consult %>% dplyr::filter(year == 2012)
+consult_2013 = Consult %>% dplyr::filter(year == 2013)
