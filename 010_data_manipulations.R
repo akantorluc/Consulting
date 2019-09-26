@@ -5,7 +5,7 @@ library(dplyr)
 Consult = Consult %>% 
           mutate(nonTypha = potber + utrmin + utrvul, trmt_above = ifelse(trmt == 'Above', 1, 0),
                  trmt_below = ifelse(trmt == 'Below', 1, 0), trmt_Mow = ifelse(trmt == 'Mow', 1, 0),
-                 trmt_control = ifelse(trmt == 'Control', 1, 0))
+                 trmt_control = ifelse(trmt == 'Control', 1, 0), trmt_yes = ifelse(trmt == "Control", 0, 1))
 
 
 #high variance issues with water depth and typha so we 

@@ -38,14 +38,37 @@ summary(mod4)
 
 #after talking with Brian
 mod.5 = 'waterDepth ~ year
-        potber ~ waterDepth + trmt_above + trmt_below + trmt_Mow
-        potber ~ Typha
-        potber ~ year'
-mod5 = sem(mod.5, data = Consult)
+        potber ~ waterDepth + trmt_above + trmt_below + trmt_Mow + Typha + year'
+mod5 = sem(mod.5, data = Consult, estimator = "mlm")
 summary(mod5)
+# New test stat is 6.16/.878, .135 p-value
+
+mod.51 = 'waterDepth ~ year
+        potber ~ Typha + year'
+mod51 = sem(mod.51, data = Consult, estimator = "mlm")
+summary(mod51)
+
 
 mod.6 = 'waterDepth ~ year
-        Typha ~ trmt_above + trmt_below + trmt_Mow + year
-        potber ~ Typha'
-mod6 = sem(mod.6, data = Consult)
+        Typha ~ trmt_above + trmt_below + trmt_Mow
+        potber ~ Typha + year'
+mod6 = sem(mod.6, data = Consult, estimator = "mlm")
 summary(mod6)
+
+mod.7 = 'waterDepth ~ year
+        Typha ~ trmt_above + trmt_below + trmt_Mow + year
+        utrmin ~ Typha'
+mod7 = sem(mod.7, data = Consult, estimator = "mlm")
+summary(mod7)
+
+mod.8 = 'waterDepth ~ year
+        Typha ~ trmt_above + trmt_below + trmt_Mow + year
+        utrvul ~ Typha'
+mod8 = sem(mod.8, data = Consult, estimator = "mlm")
+summary(mod8)
+
+# 2011 models
+mod.9 = 'Typha ~ trmt_above + trmt_below + trmt_Mow + waterDepth
+        utrvul ~ Typha + waterDepth'
+mod9 = sem(mod.9, data = consult_2013, estimator = "mlm")
+summary(mod9)
