@@ -50,16 +50,23 @@ ggplot(data = Consult) + (mapping = aes(x = trmt, y = Typha)) + geom_col() # Cut
 
 plot(year, Typha) # 2012 and 2013 have less Typha than 2011
 
-plot(Typha, potber)
+plot(potber, Typha)
+plot(potber, typha_no_zero)
 pot_no_zero <- lapply(potber,function(x) x[x!=0])
-plot(Typha, pot_no_zero) # Could be exponentially distibuted with a large lambda, but there are zeros so this won't work. Could be polynomial then. 
+typha_no_zero <- lapply(Typha, function(x) x[x!=0])
+plot(pot_no_zero, Typha) # Could be exponentially distibuted with a large lambda, but there are zeros so this won't work. Could be polynomial then. 
 
 
 plot(year, potber) # Doesn't look like year has much of an effect
 
-plot(Typha, utrmin) # Definitely a decrease in utrmin as Typha increases. Maybe linear. 
+plot(Typha, utrmin) # Definitely a decrease in utrmin as Typha increases. Maybe linear.
+plot(utrmin, Typha)
 
 plot(year, utrmin) # 2011 is only year with varying levels
+
+plot(utrmin, Typha)
+plot(potber, Typha)
+plot(utrvul, Typha)
 
 plot(Typha, utrvul) # Lots of dispersion, no clear trend
 
