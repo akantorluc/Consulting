@@ -16,3 +16,7 @@ Consult.modlist <- psem(
   lme(Typha ~ waterDepth + trmt, random = ~1|plot, data = Consult), 
   glmer(potber ~ waterDepth + Typha + (1|plot), family = poisson(link = "log"), data = Consult))
 summary(Consult.modlist)
+
+# Piecewise links
+# https://jonlefcheck.net/2014/07/06/piecewise-structural-equation-modeling-in-ecological-research/
+# https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-1034.1
