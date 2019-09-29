@@ -9,8 +9,17 @@ Consult = Consult %>%
 
 
 #high variance issues with water depth and typha so we 
-#divided it by 10 to be at teh same scal as teh otehr variables
-Consult = Consult %>% mutate(Typha = Typha/10, waterDepth = waterDepth/10)
+#divided it by 10 to be at the same scale as the other variables
+#_dec are the percent values /100 for binomial models
+Consult = Consult %>% mutate(Typha10 = Typha/10, waterDepth10 = waterDepth/10) %>% 
+                      mutate(potber_dec = potber/100, utrmin_dec=utrmin/100, 
+                             utrvul_dec = utrvul/100, Typha_dec = Typha/100)
+
+Consult_hurdle = Consult %>% mutate(Typha_gtzero = ifelse(Typha > 0, 1, 0), potber_gtzero = ifelse(potber>0, 1, 0))
+
+
+#change all chr vars into fct vars
+Consult[,c(1,3:5)] = lapply(Consult[,c(1,3:5)], as.factor) 
 
 #main data set
 save(Consult, file="Consult_data.Rdata")
