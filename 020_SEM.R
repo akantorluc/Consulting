@@ -48,27 +48,51 @@ mod.51 = 'waterDepth ~ year
 mod51 = sem(mod.51, data = Consult, estimator = "mlm")
 summary(mod51)
 
-# trmt_yes is in models 6-8 instead of individual treatments. Got better p-values. 
+# trmt_yes is in models 6-8 instead of individual treatments. Got better p-values.
+#these are our best for now
 mod.6 = 'waterDepth ~ year
-        Typha ~ trmt_yes +year
-        potber ~ Typha + year'
+        Typha ~ trmt_yes + year
+        potber ~ Typha'
 mod6 = sem(mod.6, data = Consult, estimator = "mlm")
-summary(mod6)
+summary(mod6) #0.53
 
 mod.7 = 'waterDepth ~ year
         Typha ~ trmt_yes + year
         utrmin ~ Typha'
 mod7 = sem(mod.7, data = Consult, estimator = "mlm")
-summary(mod7)
+summary(mod7) #0.284
 
 mod.8 = 'waterDepth ~ year
         Typha ~ trmt_yes + year
         utrvul ~ Typha'
 mod8 = sem(mod.8, data = Consult, estimator = "mlm")
-summary(mod8)
+summary(mod8) #0.318
+
+#including 'site'- copy of model 6,7,8
+mod.9 = 'waterDepth ~ year + site
+        Typha ~ trmt_yes + year
+        potber ~ Typha'
+mod9 = sem(mod.9, data = Consult, estimator = "mlm")
+summary(mod9) #0.383
+
+mod.10 = 'waterDepth ~ year + site
+        Typha ~ trmt_yes + year
+        utrmin ~ Typha'
+mod10 = sem(mod.10, data = Consult, estimator = "mlm")
+summary(mod10) #p= 0.197
+
+mod.11 = 'waterDepth ~ year + site
+        Typha ~ trmt_yes + year
+        utrvul ~ Typha'
+mod11 = sem(mod.11, data = Consult, estimator = "mlm")
+summary(mod11) #0.202
+
+anova(mod9, mod6)
+#not a significant diff so stick with mods 6,7,8
+
 
 # 2011 models
-mod.9 = 'Typha ~ trmt_above + trmt_below + trmt_Mow + waterDepth
+mod.t1 = 'Typha ~ trmt_above + trmt_below + trmt_Mow + waterDepth
         utrvul ~ Typha + waterDepth'
-mod9 = sem(mod.9, data = consult_2013, estimator = "mlm")
-summary(mod9)
+modt1 = sem(mod.t1, data = consult_2011, estimator = "mlm")
+summary(modt1)
