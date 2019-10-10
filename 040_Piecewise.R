@@ -36,6 +36,18 @@ Consult.modlist <- psem(
 )
 summary(Consult.modlist, Consult_hurdle)
 
+# try the same thing with binomial instead of gamma
+Consult.modlist <- psem(
+  glm(waterDepth ~ year, data = Consult_hurdle),
+  glm(Typha_gtzero ~ waterDepth + trmt_yes, family = binomial(link=logit), data=Consult_hurdle),
+  glm(Typha_dec ~ waterDepth + trmt_yes, 
+      family = binomial(link = "logit"), data = subset(Consult_hurdle, Typha_gtzero == 1)),
+  glm(potber_gtzero ~ waterDepth + Typha_dec, family = binomial(link=logit), data=Consult_hurdle),
+  glm(potber_dec ~ waterDepth + Typha_dec, 
+      family = binomial(link = "logit"), data = subset(Consult_hurdle, potber_gtzero == 1))
+)
+summary(Consult.modlist, Consult_hurdle)
+
 # Piecewise links
 # https://jonlefcheck.net/2014/07/06/piecewise-structural-equation-modeling-in-ecological-research/
 # https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-1034.1
