@@ -36,7 +36,7 @@ Consult.modlist <- psem(
 )
 summary(Consult.modlist, Consult_hurdle)
 
-# try the same thing with binomial instead of gamma
+# try the same thing with binomial instead of gamma: p = .648
 Consult.modlist <- psem(
   glm(waterDepth ~ year, data = Consult_hurdle),
   glm(Typha_gtzero ~ waterDepth + trmt_yes, family = binomial(link=logit), data=Consult_hurdle),
@@ -44,6 +44,18 @@ Consult.modlist <- psem(
       family = binomial(link = "logit"), data = subset(Consult_hurdle, Typha_gtzero == 1)),
   glm(potber_gtzero ~ waterDepth + Typha_dec, family = binomial(link=logit), data=Consult_hurdle),
   glm(potber_dec ~ waterDepth + Typha_dec, 
+      family = binomial(link = "logit"), data = subset(Consult_hurdle, potber_gtzero == 1))
+)
+summary(Consult.modlist, Consult_hurdle)
+
+# Model without potber ~ waterDepth: p = .746
+Consult.modlist <- psem(
+  glm(waterDepth ~ year, data = Consult_hurdle),
+  glm(Typha_gtzero ~ waterDepth + trmt_yes, family = binomial(link=logit), data=Consult_hurdle),
+  glm(Typha_dec ~ waterDepth + trmt_yes, 
+      family = binomial(link = "logit"), data = subset(Consult_hurdle, Typha_gtzero == 1)),
+  glm(potber_gtzero ~ waterDepth + Typha_dec, family = binomial(link=logit), data=Consult_hurdle),
+  glm(potber_dec ~ Typha_dec, 
       family = binomial(link = "logit"), data = subset(Consult_hurdle, potber_gtzero == 1))
 )
 summary(Consult.modlist, Consult_hurdle)
