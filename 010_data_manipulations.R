@@ -5,13 +5,14 @@ library(dplyr)
 Consult = Consult %>% 
           mutate(nonTypha = potber + utrmin + utrvul, trmt_above = ifelse(trmt == 'Above', 1, 0),
                  trmt_below = ifelse(trmt == 'Below', 1, 0), trmt_Mow = ifelse(trmt == 'Mow', 1, 0),
-                 trmt_control = ifelse(trmt == 'Control', 1, 0), trmt_yes = ifelse(trmt == "Control", 0, 1))
+                 trmt_control = ifelse(trmt == 'Control', 1, 0), trmt_yes = ifelse(trmt == "Control", 0, 1),
+                 site_isCedar = ifelse(site == 'Cedarville', 1, 0))
 
 
 #high variance issues with water depth and typha so we 
 #divided it by 10 to be at the same scale as the other variables
 #_dec are the percent values /100 for binomial models
-Consult = Consult %>% mutate(Typha10 = Typha/10, waterDepth10 = waterDepth/10) %>% 
+Consult = Consult %>% mutate(Typha10 = Typha/10, waterDepth10 = waterDepth/10, vegCover10 = vegCover/10) %>% 
                       mutate(potber_dec = potber/100, utrmin_dec=utrmin/100, 
                              utrvul_dec = utrvul/100, Typha_dec = Typha/100)
 

@@ -55,34 +55,3 @@ summary(mod_no_sitewatryr)
 aictab(list(mod_full, mod_no_site, mod_no_sitewatr, mod_no_sitewatryr, mod_no_trtwatr, mod_no_watr),
               c("full", "no site", "no sitewatr", "no sitewatryr", "no trtwatr", "no watr"))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
