@@ -55,3 +55,17 @@ summary(mod_no_sitewatryr)
 aictab(list(mod_full, mod_no_site, mod_no_sitewatr, mod_no_sitewatryr, mod_no_trtwatr, mod_no_watr),
               c("full", "no site", "no sitewatr", "no sitewatryr", "no trtwatr", "no watr"))
 
+mod.vc = 'waterDepth10 ~ year + site
+          Typha10 ~ trmt_yes + year + vegCover
+          potber ~ Typha10 + vegCover
+          utrmin ~ Typha10 + vegCover
+          utrvul ~ Typha10 + vegCover'
+mod_vc = sem(mod.vc, data = Consult, estimator = "mlm")
+summary(mod_vc)
+
+mod.vc2 = 'waterDepth10 ~ year + site
+          Typha10 ~ trmt_yes + year + vegCover'
+mod_vc2 = sem(mod.vc2, data = Consult, estimator = "mlm")
+summary(mod_vc2)
+
+aictab(list(mod_vc, mod_vc2), c("vc", "vc2"))
