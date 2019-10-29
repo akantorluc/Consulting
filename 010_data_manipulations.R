@@ -30,3 +30,7 @@ save(Consult, file="Consult_data.Rdata")
 consult_2011 = Consult %>% dplyr::filter(year == 2011)
 consult_2012 = Consult %>% dplyr::filter(year == 2012)
 consult_2013 = Consult %>% dplyr::filter(year == 2013)
+
+# variables by year
+
+Consult_yearly = read.csv("Plants_By_Year.csv", header = TRUE)
