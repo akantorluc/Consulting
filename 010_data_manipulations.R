@@ -36,3 +36,4 @@ consult_2013 = Consult %>% dplyr::filter(year == 2013)
 Consult_yearly = read.csv("Plants_By_Year.csv", header = TRUE)
 Consult_yearly = Consult_yearly %>% mutate(trmt_yes = ifelse(trmt == "Control", 0, 1))
 names(Consult_yearly)[1] <- "site"
+
