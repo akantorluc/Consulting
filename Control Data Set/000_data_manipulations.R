@@ -1,3 +1,5 @@
 library(tidyverse)
 library(reshape2)
+library(dplyr)
 long_data = dcast(melt(newData), plot + subplot ~ year + variable, fill = NA)
+long_data = long_data %>% mutate(YR2016_detritusAW = ifelse(is.na(YR2016_detritusAW), 99, YR2016_detritusAW))
