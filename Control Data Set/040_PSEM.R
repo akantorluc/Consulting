@@ -50,12 +50,42 @@ summary(pmod4) # 0.825
 
 # Best model = no missing terms or bad relationships. No graminoids response. 
 pmod5 <- psem(
-  lme(typhaBM100 ~ unVegCover + graminoids, random = ~1|plot, data = global_data), 
-  lme(log(detritusAW+1) ~ typhaBM100 + NH4_N + waterDepth, random = ~1|plot, data = global_data),
-  lme(richness ~ H + NO3_N + graminoids + typhaBM100 + organic, random = ~1|plot, data = global_data),
+  lme(typhaBM100 ~ unVegCover + graminoids + year, random = ~1|plot, data = global_data), 
+  lme(log(detritusAW+1) ~ typhaBM100 + NH4_N + waterDepth + year, random = ~1|plot, data = global_data),
+  lme(richness ~ H + NO3_N + graminoids + typhaBM100 + organic + year, random = ~1|plot, data = global_data),
   lme(log(aquatics) ~ H + NO3_N + graminoids + waterDepth, random = ~1|plot, data = global_data)
 )
 summary(pmod5) # 0.669
+
+# Adjusting for the loged responses
+pmod6 <- psem(
+  lme(typhaBM100 ~ unVegCover + graminoids, random = ~1|plot, data = global_data), 
+  lme(log(detritusAW+1) ~ waterDepth + typhaBM100, random = ~1|plot, data = global_data),
+  lme(richness ~ H + NO3_N + graminoids + typhaBM100 + organic, random = ~1|plot, data = global_data),
+  lme(log(aquatics+1) ~ H + NO3_N + graminoids + waterDepth + typhaBM100 + richness, random = ~1|plot, data = global_data)
+)
+summary(pmod6) # .768
+
+
+
+
+############################################################
+
+# Adding in year - best model!!!!!!!!!!!
+pmod7 <- psem(
+  lme(typhaBM100 ~ unVegCover + graminoids + NO3_N + organic + year, random = ~1|plot, data = global_data), 
+  lme(log(detritusAW+1) ~ waterDepth + typhaBM100, random = ~1|plot, data = global_data),
+  lme(richness ~ H + NO3_N + graminoids + typhaBM100 + organic, random = ~1|plot, data = global_data),
+  lme(log(aquatics+1) ~ H + NO3_N + graminoids + waterDepth + typhaBM100 + richness + year, random = ~1|plot, data = global_data)
+)
+summary(pmod7) # .803
+
+
+
+
+
+
+
 
 # Checking model assumptions...
 lmt <- glm(typhaBM100 ~ unVegCover + graminoids, data = global_data)
