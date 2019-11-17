@@ -34,7 +34,3 @@ lmod1 <- 'YR2016_typhaBM ~ YR2015_unVegCover + YR2015_graminoids  + YR2015_typha
           YR2018_richness ~~ logYR2018_aquatics'
 modl1 = sem(lmod1, data = long_data, estimator="mlm")
 summary(modl1)
-
-
-
-# 2017 typha, 2018 richness, 2018 aquatics
