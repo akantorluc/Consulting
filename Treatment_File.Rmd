@@ -1,0 +1,390 @@
+---
+title: "Treatment File"
+author: "Brad Hughes & Alicia Kantor"
+date: "December 3, 2019"
+output: html_document
+---
+Below is the summary of our data. For additional work, reference our github:  https://github.com/akantorluc/Consulting
+
+### Data Manipulation
+```{r}
+library(dplyr)
+
+#create variables combining other plants that are not Typha and split trmt variable into dummies
+Consult = Consult %>% 
+          mutate(nonTypha = potber + utrmin + utrvul, trmt_above = ifelse(trmt == 'Above', 1, 0),
+                 trmt_below = ifelse(trmt == 'Below', 1, 0), trmt_Mow = ifelse(trmt == 'Mow', 1, 0),
+                 trmt_control = ifelse(trmt == 'Control', 1, 0), trmt_yes = ifelse(trmt == "Control", 0, 1),
+                 site_isCedar = ifelse(site == 'Cedarville', 1, 0))
+
+#high variance issues with water depth and typha so we divided it by 10 to be at the same scale as the other variables
+#_dec are the percent values /100 for binomial models
+Consult = Consult %>% mutate(Typha10 = Typha/10, waterDepth10 = waterDepth/10, vegCover10 = vegCover/10) %>% 
+                      mutate(potber_dec = potber/100, utrmin_dec=utrmin/100, 
+                             utrvul_dec = utrvul/100, Typha_dec = Typha/100)
+
+#change all chr vars into fct vars
+Consult[,c(1,3:5)] = lapply(Consult[,c(1,3:5)], as.factor) 
+
+#main data set
+save(Consult, file="Consult_data.Rdata")
+
+# variables by year
+Consult_yearly = read.csv("Plants_By_Year.csv", header = TRUE) # Plants+By_YEar.csv is excel file
+Consult_yearly = Consult_yearly %>% mutate(trmt_yes = ifelse(trmt == "Control", 0, 1))
+names(Consult_yearly)[1] <- "site"
+Consult_yearly = Consult_yearly %>% mutate(sqrt_Typha13 = sqrt(Typha13), sqrt_Typha12 = sqrt(Typha12))
+```
+
+### Global SEM
+```{r}
+library(lavaan)
+library(AICcmodavg)
+
+mod.full = 'waterDepth10 ~ year + site
+          trmt_yes ~ waterDepth10
+          Typha10 ~ trmt_yes + year + site + waterDepth10
+          potber ~ Typha10
+          utrmin ~ Typha10
+          utrvul ~ Typha10'
+mod_full = sem(mod.full, data = Consult, estimator = "mlm")
+summary(mod_full) #0.032
+
+mod.no_trtwatr = 'waterDepth10 ~ year + site
+          Typha10 ~ trmt_yes + year + site + waterDepth10
+          potber ~ Typha10
+          utrmin ~ Typha10
+          utrvul ~ Typha10'
+mod_no_trtwatr = sem(mod.no_trtwatr, data = Consult, estimator = "mlm")
+summary(mod_no_trtwatr) #0.019
+
+mod.no_watr = 'waterDepth10 ~ year + site
+          Typha10 ~ trmt_yes + year + site
+          potber ~ Typha10
+          utrmin ~ Typha10
+          utrvul ~ Typha10'
+mod_no_watr = sem(mod.no_watr, data = Consult, estimator = "mlm")
+summary(mod_no_watr) #0.119
+
+mod.no_site = 'waterDepth10 ~ year + site
+          Typha10 ~ trmt_yes + year + waterDepth10
+          potber ~ Typha10
+          utrmin ~ Typha10
+          utrvul ~ Typha10'
+mod_no_site = sem(mod.no_site, data = Consult, estimator = "mlm")
+summary(mod_no_site)
+
+mod.no_sitewatr = 'waterDepth10 ~ year + site
+          Typha10 ~ trmt_yes + year
+          potber ~ Typha10
+          utrmin ~ Typha10
+          utrvul ~ Typha10'
+mod_no_sitewatr = sem(mod.no_sitewatr, data = Consult, estimator = "mlm")
+summary(mod_no_sitewatr)
+
+mod.no_sitewatryr = 'waterDepth10 ~ year + site
+                  Typha10 ~ trmt_yes
+                  potber ~ Typha10
+                  utrmin ~ Typha10
+                  utrvul ~ Typha10'
+mod_no_sitewatryr = sem(mod.no_sitewatryr, data = Consult, estimator = "mlm")
+summary(mod_no_sitewatryr)
+
+#lowest AIC is mod_no_sitewatr and simplest model
+aictab(list(mod_full, mod_no_site, mod_no_sitewatr, mod_no_sitewatryr, mod_no_trtwatr, mod_no_watr),
+              c("full", "no site", "no sitewatr", "no sitewatryr", "no trtwatr", "no watr"))
+
+## Adding vegetated cover to the model now
+mod.vc = 'waterDepth10 ~ year + site
+          Typha10 ~ trmt_yes + year + vegCover
+          potber ~ Typha10 + vegCover
+          utrmin ~ Typha10 + vegCover
+          utrvul ~ Typha10 + vegCover'
+mod_vc = sem(mod.vc, data = Consult, estimator = "mlm")
+summary(mod_vc)
+
+mod.vc2 = 'waterDepth10 ~ year + site
+          Typha10 ~ trmt_yes + year + vegCover'
+mod_vc2 = sem(mod.vc2, data = Consult, estimator = "mlm")
+summary(mod_vc2)
+
+aictab(list(mod_vc, mod_vc2), c("vc", "vc2"))
+
+```
+
+### Exploring Variable Relationships
+```{r}
+attach(Consult)
+plot(year, waterDepth) # Water depth in 2011 differs from water depth in 2012 and 2013
+# Not necessarily linear
+library(ggplot2)
+library(dplyr)
+
+ggplot(data = Consult) + (mapping = aes(x = trmt, y = Typha)) + geom_col() # Cutting above, below, or mowing definitely has an effect on the Typha
+
+plot(year, Typha) # 2012 and 2013 have less Typha than 2011
+
+plot(potber, Typha)
+plot(potber, typha_no_zero)
+pot_no_zero <- lapply(potber,function(x) x[x!=0])
+typha_no_zero <- lapply(Typha, function(x) x[x!=0])
+plot(pot_no_zero, Typha) # Could be exponentially distibuted with a large lambda, but there are zeros so this won't work. Could be polynomial then. 
+
+
+plot(year, potber) # Doesn't look like year has much of an effect
+
+plot(Typha, utrmin) # Definitely a decrease in utrmin as Typha increases. Maybe linear.
+plot(utrmin, Typha)
+
+plot(year, utrmin) # 2011 is only year with varying levels
+
+plot(utrmin, Typha)
+plot(potber, Typha)
+plot(utrvul, Typha)
+
+plot(Typha, utrvul) # Lots of dispersion, no clear trend
+
+plot(year, utrvul) # Year definietly has an effect on utrvul
+
+plot(waterDepth, potber) # No clear pattern
+
+plot(waterDepth, utrmin) # No clear pattern
+
+plot(waterDepth, utrvul) # more utrvul as waterDepth increases. Could definitely have a linear relationship. 
+
+```
+
+### Piecewise SEM
+```{r}
+library(devtools)
+library(piecewiseSEM)
+library(lmerTest)
+library(nlme)
+
+# Best piecewise model w/ binomial distributions: p = .746
+# Does not work because of gamma distributions
+Consult.modlist <- psem(
+  glm(waterDepth ~ year, data = Consult_hurdle),
+  glm(Typha_gtzero ~ waterDepth + trmt_yes, family = binomial(link=logit), data=Consult_hurdle),
+  glm(Typha_dec ~ waterDepth + trmt_yes, 
+      family = Gamma(), data = subset(Consult_hurdle, Typha_gtzero == 1)),
+  glm(potber_gtzero ~ waterDepth + Typha_dec, family = binomial(link=logit), data=Consult_hurdle),
+  glm(potber_dec ~ Typha_dec, 
+      family = Gamma(), data = subset(Consult_hurdle, potber_gtzero == 1))
+)
+summary(Consult.modlist, Consult_hurdle)
+```
+
+### Checking Assumptions
+```{r}
+# Checking normality and constant variance based on the following model
+# waterDepth10 ~ year + site
+# Typha10 ~ trmt_yes + year
+# potber ~ Typha10
+# utrmin ~ Typha10
+# utrvul ~ Typha10
+
+attach(Consult)
+
+mod_wd_y<- lm(waterDepth10 ~ year)
+mod_wd_s<- lm(waterDepth10 ~ site) # Looks great
+
+mod_Typ_y <- lm(Typha10 ~ year)
+mod_Typ_trmt <- lm(Typha10^.5 ~ trmt_yes) # This transformation looks good
+
+mod_pot <- lm(1 + potber ~ Typha10)
+mod_pot_1 <- lm(log1p(potber) ~ log1p(Typha10)) # Log transformation
+mod_pot_2 <- lm(-1/(1+potber)**2 ~ Typha10) # Negative inverse
+
+mod_min <- lm(1 + utrmin ~ Typha10)
+mod_vul <- lm(1 + utrvul ~ Typha10)
+
+par(mfrow = c(2, 2))
+plot(mod_Typ_trmt) # repeated for each model
+```
+
+### Global SEM including VegCover variable
+```{r}
+# adding and subtracting variable based on each model's output
+mod.full = 'waterDepth10 ~ year + site_isCedar
+          Typha10 ~ site_isCedar + waterDepth10 + trmt_yes
+          potber ~ site_isCedar + Typha10 + waterDepth10
+          utrmin ~ site_isCedar + Typha10 + waterDepth10
+          utrvul ~ site_isCedar + Typha10 + waterDepth10
+          vegCover10 ~ site_isCedar  + Typha10 + waterDepth10 + trmt_yes + potber + utrmin + utrvul'
+mod_full = sem(mod.full, data = Consult, estimator = "mlm")
+summary(mod_full)
+
+
+mod.1 = 'waterDepth10 ~ year + site_isCedar
+          Typha10 ~ site_isCedar + waterDepth10 + trmt_yes
+          potber ~ Typha10 + waterDepth10
+          utrmin ~ site_isCedar + Typha10 + waterDepth10
+          utrvul ~ site_isCedar + Typha10 + waterDepth10
+          vegCover10 ~ site_isCedar  + Typha10 + waterDepth10 + trmt_yes + potber + utrmin + utrvul'
+mod_1 = sem(mod.1, data = Consult, estimator = "mlm")
+summary(mod_1)
+
+mod.2 = 'waterDepth10 ~ year + site_isCedar
+          Typha10 ~ site_isCedar + waterDepth10 + trmt_yes
+          potber ~ Typha10 + waterDepth10
+          utrmin ~ site_isCedar + Typha10
+          utrvul ~ site_isCedar + Typha10 + waterDepth10
+          vegCover10 ~ site_isCedar  + Typha10 + waterDepth10 + trmt_yes + potber + utrmin + utrvul'
+mod_2 = sem(mod.2, data = Consult, estimator = "mlm")
+summary(mod_2)
+
+mod.3 = 'waterDepth10 ~ year + site_isCedar
+        Typha10 ~ site_isCedar + waterDepth10 + trmt_yes
+        potber ~ Typha10 + waterDepth10
+        utrmin ~ site_isCedar + Typha10
+        utrvul ~ site_isCedar + Typha10 + waterDepth10
+        vegCover10 ~ site_isCedar  + Typha10 + waterDepth10 + potber + utrmin + utrvul'
+mod_3 = sem(mod.3, data = Consult, estimator = "mlm")
+summary(mod_3)
+
+
+mod.4 = 'waterDepth10 ~ year + site_isCedar
+        Typha10 ~ site_isCedar + waterDepth10 + trmt_yes
+        potber ~ Typha10
+        utrmin ~ site_isCedar + Typha10
+        utrvul ~ site_isCedar + Typha10 + waterDepth10
+        vegCover10 ~ site_isCedar  + Typha10 + waterDepth10 + potber + utrmin + utrvul'
+mod_4 = sem(mod.4, data = Consult, estimator = "mlm")
+summary(mod_4)
+
+
+mod.5 = 'waterDepth10 ~ year + site_isCedar
+          Typha10 ~ site_isCedar + waterDepth10 + trmt_yes
+          potber ~ Typha10
+          utrmin ~ Typha10
+          utrvul ~ site_isCedar + Typha10 + waterDepth10
+          vegCover10 ~ site_isCedar  + Typha10 + waterDepth10 + potber + utrmin + utrvul'
+mod_5 = sem(mod.5, data = Consult, estimator = "mlm")
+summary(mod_5)
+
+#5 is best so far by AIC
+aictab(list(mod_full, mod_1, mod_2, mod_3, mod_4, mod_5),
+       c("full", "1", "2", "3", "4", "5"))
+
+
+mod.6 = 'waterDepth10 ~ year + site_isCedar
+          Typha10 ~ site_isCedar + waterDepth10 + trmt_yes
+          potber ~ Typha10
+          utrvul ~ site_isCedar + Typha10 + waterDepth10
+          vegCover10 ~ site_isCedar  + Typha10 + waterDepth10 + potber + utrmin + utrvul'
+mod_6 = sem(mod.6, data = Consult, estimator = "mlm")
+summary(mod_6)
+
+mod.7 = 'waterDepth10 ~ year + site_isCedar
+          Typha10 ~ site_isCedar + waterDepth10 + trmt_yes
+          potber ~ Typha10
+          utrvul ~ site_isCedar + Typha10 + waterDepth10
+          vegCover10 ~ site_isCedar  + Typha10 + waterDepth10 + utrmin + utrvul'
+mod_7 = sem(mod.7, data = Consult, estimator = "mlm")
+summary(mod_7)
+
+mod.8 = 'waterDepth10 ~ year + site_isCedar
+          Typha10 ~ site_isCedar + waterDepth10 + trmt_yes
+          potber ~ Typha10
+          utrvul ~ site_isCedar + waterDepth10
+          vegCover10 ~ site_isCedar  + Typha10 + waterDepth10 + utrmin + utrvul'
+mod_8 = sem(mod.8, data = Consult, estimator = "mlm")
+summary(mod_8)
+
+mod.9 = 'waterDepth10 ~ year + site_isCedar
+        Typha10 ~ site_isCedar + waterDepth10 + trmt_yes
+        potber ~ Typha10
+        utrvul ~ site_isCedar + waterDepth10
+        vegCover10 ~ site_isCedar + Typha10 + waterDepth10 + utrmin'
+mod_9 = sem(mod.9, data = Consult, estimator = "mlm")
+summary(mod_9)
+
+#model 8 is best so far
+aictab(list(mod_5, mod_6, mod_7, mod_8, mod_9),
+       c("5", "6", "7", "8", "9"))
+
+```
+
+### Best Longitudinal Models
+```{r}
+model3 <- 'Typha13 ~ Typha12 + waterDepth12 + trmt_yes + site
+          Typha12 ~ Typha11 + waterDepth11 + trmt_yes + site'
+modfit <- sem(model3, data = Consult_yearly, estimator = "mlm")
+summary(modfit) # .437
+
+model4 <- 'Typha13 ~ Typha12
+          Typha12 ~ Typha11 + trmt_yes
+          vegCover13 ~ Typha12 + waterDepth12
+          vegCover12 ~ vegCover11
+          vegCover13 ~~ Typha13
+          vegCover12 ~~ Typha12'
+modfit <- sem(model4, data = Consult_yearly, estimator = "mlm")
+summary(modfit) 
+
+model5 <- 'Typha13 ~ Typha12
+          Typha12 ~ Typha11 + trmt_yes'
+modfit <- sem(model5, data = Consult_yearly, estimator = "mlm")
+summary(modfit) # .779
+```
+
+### Checking Longitudal Assumptions
+```{r}
+### Model 3
+
+par(mfrow = c(2, 2))
+plot(lm(Typha13 ~ Typha12 + waterDepth12 + trmt_yes + site, data = Consult_yearly))
+#looks good as sqrt
+
+plot(lm(Typha12 ~ Typha11 + waterDepth11 + trmt_yes + site, data = Consult_yearly))
+#also looks good as sqrt
+
+plot(lm(sqrt(Typha13) ~ sqrt(Typha12) + waterDepth12 + trmt_yes + site, data = Consult_yearly))
+plot(lm(sqrt(Typha12) ~ sqrt(Typha11) + waterDepth11 + trmt_yes + site, data = Consult_yearly))
+
+### Model 4
+
+plot(lm(Typha13 ~ Typha12, data = Consult_yearly))
+#variance is fine but not normal which is probably fine
+plot(lm(Typha12 ~ Typha11 + trmt_yes, data = Consult_yearly))
+#good but split due to the control vs trmt groups
+plot(lm(vegCover13 ~ Typha12 + waterDepth12, data = Consult_yearly))
+#good
+plot(lm(vegCover12 ~ vegCover11 + waterDepth11, data = Consult_yearly))
+#this is a better plot than our original model, double check model fit with this
+
+## Model 5
+
+plot(lm(Typha13 ~ Typha12, data = Consult_yearly))
+#variance is fine but not normal which is probably fine
+plot(lm(Typha12 ~ Typha11 + trmt_yes, data = Consult_yearly))
+#good but split due to the control vs trmt groups
+
+plot(lm(sqrt(Typha13) ~ sqrt(Typha12), data = Consult_yearly))
+```
+
+
+### Final Models
+```{r}
+sqrt_model3 <- 'sqrt_Typha13 ~ sqrt_Typha12 + waterDepth12 + trmt_yes + site
+         sqrt_Typha12 ~ Typha11 + waterDepth11 + trmt_yes + site'
+sqrt_modfit3 <- sem(sqrt_model3, data = Consult_yearly, estimator = "mlm")
+summary(sqrt_modfit3)
+
+model4 <- 'Typha13 ~ Typha12
+          Typha12 ~ Typha11 + trmt_yes
+          vegCover13 ~ Typha12 + waterDepth12
+          vegCover12 ~ vegCover11
+          vegCover13 ~~ Typha13
+          vegCover12 ~~ Typha12'
+modfit <- sem(model4, data = Consult_yearly, estimator = "mlm")
+summary(modfit) 
+
+model5 <- 'Typha13 ~ Typha12
+          Typha12 ~ Typha11 + trmt_yes'
+modfit <- sem(model5, data = Consult_yearly, estimator = "mlm")
+summary(modfit)
+```
+
+
+

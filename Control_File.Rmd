@@ -1,0 +1,421 @@
+---
+title: "Control File"
+author: "Brad Hughes & Alicia Kantor"
+date: "December 3, 2019"
+output: html_document
+---
+Below is the summary of our data. For additional work, reference our github:  https://github.com/akantorluc/Consulting
+
+### Data Manipulation
+```{r}
+library(tidyverse)
+library(reshape2)
+library(dplyr)
+library(readr)
+
+long_data = dcast(melt(newData), plot + subplot ~ year + variable, fill = NA)
+long_data = long_data %>% mutate(YR2016_detritusAW = ifelse(is.na(YR2016_detritusAW), 99, YR2016_detritusAW))
+long_data = long_data %>% mutate(YR2017_totalVegCover = (YR2016_totalVegCover + YR2018_totalVegCover)/2, 
+                                 YR2017_unVegCover = (YR2016_unVegCover + YR2018_unVegCover)/2,
+                                 YR2015_detritusAW = YR2016_detritusAW,
+                                 YR2015_typhaDens = YR2016_typhaDens)
+long_data = long_data %>% mutate(logYR2015_detritusAW = log(YR2015_detritusAW + 1), logYR2016_detritusAW = log(YR2016_detritusAW + 1), 
+                                 logYR2017_detritusAW = log(YR2017_detritusAW + 1), logYR2018_detritusAW = log(YR2018_detritusAW + 1), 
+                                 logYR2015_aquatics = log(YR2015_aquatics + 1), logYR2016_aquatics = log(YR2016_aquatics + 1), 
+                                 logYR2017_aquatics = log(YR2017_aquatics + 1), logYR2018_aquatics = log(YR2018_aquatics + 1))
+long_data = long_data %>% mutate(YR2015_typhaBM100 = YR2015_typhaBM / 100, YR2016_typhaBM100 = YR2016_typhaBM / 100, 
+                                 YR2017_typhaBM100 = YR2017_typhaBM / 100, YR2018_typhaBM100 = YR2018_typhaBM / 100)
+
+global_data = Global_Control_Cheboygan
+global_data = global_data %>% filter(year=="YR2015" | year =="YR2016" | year=="YR2017" | year=="YR2018")
+global_data[5:23] = as.data.frame(lapply(global_data[5:23], as.double))
+global_data = global_data %>% mutate(typhaBM100 = typhaBM/100)
+
+global_data = global_data %>% mutate(detritusAW10 = detritusAW/10, unVegCover10 = unVegCover / 10, 
+                                     waterDepth10 = waterDepth / 10, NO3_N10 = NO3_N / 10, 
+                                     organic10 = organic / 10)
+global_data[1:4] = as.data.frame(lapply(global_data[1:4], as.factor))
+global_data$year = as.character(global_data$year)
+global_data$year = parse_number(global_data$year)
+```
+
+### Data Exploration
+```{r}
+library(ggplot2)
+ggplot(global_data, aes(x=year, y = waterDepth, colour = plot, group=plot)) + 
+ geom_smooth(method = "loess", size=2, alpha=0.15) +
+  theme_classic()
+
+ggplot(global_data, aes(x=year, y = typhaBM, colour = plot, group=plot)) + 
+  geom_smooth(method = "loess", size=2, alpha=0.15) +
+  theme_classic()
+
+ggplot(global_data, aes(x=year, y = detritusAW, colour = plot, group=plot)) + 
+  geom_smooth(method = "loess", size=2, alpha=0.15) +
+  theme_classic()
+
+ggplot(global_data, aes(x=year, y = totalVegCover, colour = plot, group=plot)) + 
+  geom_smooth(method = "loess", size=2, alpha=0.15) +
+  theme_classic()
+
+ggplot(global_data, aes(x=year, y = aquatics, colour = plot, group=plot)) + 
+  geom_smooth(method = "loess", size=2, alpha=0.15) +
+  theme_classic()
+
+#RIP XXXX-2016
+ggplot(global_data, aes(x=year, y = woody, colour = plot, group=plot)) + 
+  geom_smooth(method = "loess", size=2, alpha=0.15) +
+  theme_classic()
+```
+
+### Assumptions
+```{r}
+attach(Ohsowski_Control_Data)
+
+hist(detriusAW16)
+
+# Water
+hist(waterDepth15)
+hist(waterDepth16)
+hist(waterDepth17)
+water <- c(waterDepth15, waterDepth16, waterDepth17, waterDepth18, waterDepth19)
+hist(water)
+
+# Typha
+hist(typhaBM15)
+hist(typhaBM16)
+hist(typhaBM17)
+typ <- c(typhaBM15, typhaBM16, typhaBM17, typhaBM18)
+hist(typ)
+
+# Veg Cover
+hist(totalVegCover15)
+hist(totalVegCover16)
+veg <- c(totalVegCover15, totalVegCover16, totalVegCover18, totalVegCover19)
+hist(veg)
+
+# Aquatics
+hist(aquatics15)
+hist(aquatics16)
+aqu <- c(aquatics15, aquatics16, aquatics17, aquatics18)
+hist(aqu)
+
+attach(newData)
+par(mfrow = c(1,1))
+hist(organic) #slight right skewed, pretty normal
+hist(H) #very right skewed/ zero inflated
+hist(richness) #count data, right skewed?
+hist(typhaDens) #normal
+hist(NO3_N) #very right skewed
+hist(NH4_N, breaks = 15) #slight right skewed with 1 very high outlier
+hist(sedges) #really bad zero inflated but maybe useful
+hist(rushes) #exclude
+hist(grasses) #exclude
+hist(graminoids) #normal
+hist(forbs) #zero inflated (9/25)
+hist(woody) #only 1 tree so exclude
+hist(typCover) #normal
+hist(typhaBM) #right skewed
+hist(detritusAW) #right skewed with lots of zeros
+hist(waterDepth) #right skewed
+hist(totalVegCover) #slight right skew
+hist(aquatics) #zero inflated and awful
+```
+
+### Longitudinal Piecewise SEM
+```{r}
+library(lavaan)
+
+model1 <- 'Typha ~ waterDepth
+          detritus ~ Typha
+          TotalVegCover ~ detritus
+          aquatics ~ TotalVegCover + detritus'
+
+attach(long_data)
+library(nlme)
+library(piecewiseSEM)
+
+new.modlist <- psem(
+  lme(YR2016_typhaBM ~ YR2015_typhaBM + YR2015_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2017_typhaBM ~ YR2016_typhaBM + YR2016_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2018_typhaBM ~ YR2017_typhaBM + YR2017_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2016_detritusAW ~ YR2015_typhaBM, random = ~1|plot, data = long_data),
+  lme(YR2017_detritusAW ~ YR2016_detritusAW + YR2016_typhaBM, random = ~1|plot, data = long_data),
+  lme(YR2018_detritusAW ~ YR2017_detritusAW + YR2017_typhaBM, random = ~1|plot, data = long_data),
+  lme(YR2016_totalVegCover ~ YR2015_totalVegCover, random = ~1|plot, data = long_data),
+  lme(YR2018_totalVegCover ~ YR2017_detritusAW, random = ~1|plot, data = long_data),
+  lme(YR2016_aquatics ~ YR2015_aquatics + YR2015_totalVegCover, random = ~1|plot, data = long_data),
+  lme(YR2017_aquatics ~ YR2016_aquatics + YR2016_totalVegCover + YR2016_detritusAW, random = ~1|plot, data = long_data),
+  lme(YR2018_aquatics ~ YR2017_aquatics + YR2017_detritusAW, random = ~1|plot, data = long_data)
+)
+summary(new.modlist, long_data)
+
+# accounting for relationship between same year responses since there is no covariance
+new.modlist1 <- psem(
+  lme(YR2016_typhaBM ~ YR2015_typhaBM + YR2015_waterDepth + YR2016_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2017_typhaBM ~ YR2016_typhaBM + YR2016_waterDepth + YR2017_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2018_typhaBM ~ YR2017_typhaBM + YR2017_waterDepth + YR2018_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2016_detritusAW ~ YR2015_typhaBM + YR2016_typhaBM, random = ~1|plot, data = long_data),
+  lme(YR2017_detritusAW ~ YR2016_detritusAW + YR2016_typhaBM + YR2017_typhaBM, random = ~1|plot, data = long_data),
+  lme(YR2018_detritusAW ~ YR2017_detritusAW + YR2017_typhaBM + YR2018_typhaBM, random = ~1|plot, data = long_data),
+  lme(YR2016_totalVegCover ~ YR2016_detritusAW + YR2015_totalVegCover, random = ~1|plot, data = long_data),
+  lme(YR2018_totalVegCover ~ YR2017_detritusAW + YR2018_detritusAW, random = ~1|plot, data = long_data),
+  lme(YR2016_aquatics ~ YR2015_aquatics + YR2015_totalVegCover + YR2016_totalVegCover, random = ~1|plot, data = long_data),
+  lme(YR2017_aquatics ~ YR2016_aquatics + YR2016_totalVegCover + YR2016_detritusAW + YR2017_detritusAW, random = ~1|plot, data = long_data),
+  lme(YR2018_aquatics ~ YR2017_aquatics + YR2017_detritusAW + YR2018_detritusAW + YR2018_totalVegCover, random = ~1|plot, data = long_data)
+)
+summary(new.modlist1, long_data)
+
+# Adding in significant relationships
+new.modlist2 <- psem(
+  lme(YR2016_typhaBM ~ YR2015_typhaBM + YR2015_waterDepth + YR2016_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2017_typhaBM ~ YR2016_typhaBM + YR2016_waterDepth + YR2017_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2018_typhaBM ~ YR2017_typhaBM + YR2017_waterDepth + YR2018_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2016_detritusAW ~ YR2015_typhaBM + YR2016_typhaBM + YR2015_waterDepth + YR2016_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2017_detritusAW ~ YR2016_detritusAW + YR2016_typhaBM + YR2017_typhaBM + YR2016_waterDepth + YR2017_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2018_detritusAW ~ YR2017_detritusAW + YR2017_typhaBM + YR2018_typhaBM + YR2017_waterDepth + YR2018_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2016_totalVegCover ~ YR2016_detritusAW + YR2015_totalVegCover + YR2015_waterDepth + YR2016_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2018_totalVegCover ~ YR2017_detritusAW + YR2018_detritusAW + YR2016_totalVegCover + YR2017_waterDepth + YR2018_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2016_aquatics ~ YR2015_aquatics + YR2015_totalVegCover + YR2016_totalVegCover, random = ~1|plot, data = long_data),
+  lme(YR2017_aquatics ~ YR2016_aquatics + YR2016_totalVegCover + YR2016_detritusAW + YR2017_detritusAW, random = ~1|plot, data = long_data),
+  lme(YR2018_aquatics ~ YR2017_aquatics + YR2017_detritusAW + YR2018_detritusAW + YR2018_totalVegCover, random = ~1|plot, data = long_data)
+)
+summary(new.modlist2, long_data)
+
+# removing unnecessary links
+new.modlist2 <- psem(
+  lme(YR2016_detritusAW ~ YR2015_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2017_detritusAW ~ YR2016_waterDepth + YR2017_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2018_detritusAW ~ YR2017_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2018_totalVegCover ~ YR2018_detritusAW + YR2018_waterDepth, random = ~1|plot, data = long_data),
+  lme(YR2016_aquatics ~ YR2015_aquatics, random = ~1|plot, data = long_data),
+  lme(YR2017_aquatics ~ YR2015_aquatics + YR2016_detritusAW + YR2016_aquatics, random = ~1|plot, data = long_data),
+  lme(YR2018_aquatics ~ YR2016_detritusAW + YR2018_detritusAW + YR2018_totalVegCover, random = ~1|plot, data = long_data)
+)
+summary(new.modlist2, long_data)
+```
+
+### Global SEM
+```{r}
+library(lavaan)
+
+#original model by Brian also not good
+mod1 <- 'typhaBM ~ waterDepth
+          detritusAW ~ typhaBM
+          totalVegCover ~ detritusAW
+          aquatics ~ totalVegCover + detritusAW'
+mod11 = sem(mod1, data = global_data, estimator="mlm")
+summary(mod11)
+
+# Good model
+mod2 <- 'typhaBM100 ~ waterDepth + H + unVegCover
+          graminoids ~ H
+          detritusAW ~ typhaBM100 + NH4_N + waterDepth + H
+          richness ~ H + NO3_N + typhaBM100 + organic
+          aquatics ~ H + NO3_N + organic + waterDepth'
+mod22 = sem(mod2, data = global_data, estimator="mlm")
+summary(mod22, fit.measures = T)
+```
+
+### Piecewise SEM based on global mod2
+```{r}
+library(devtools)
+library(piecewiseSEM)
+library(lmerTest)
+library(nlme)
+
+#'typhaBM100 ~ waterDepth + H + unVegCover
+#          graminoids ~ H
+#          detritusAW ~ typhaBM100 + NH4_N + waterDepth + H
+#          richness ~ H + NO3_N + typhaBM100 + organic
+#          aquatics ~ H + NO3_N + organic + waterDepth'
+
+pmod1 <- psem(
+  lme(typhaBM100 ~ waterDepth + H + unVegCover, random = ~1|plot, data = global_data), 
+  lme(graminoids ~ H, random = ~1|plot, data = global_data),
+  lme(detritusAW ~ typhaBM100 + NH4_N + waterDepth + H, random = ~1|plot, data = global_data),
+  lme(richness ~ H + NO3_N + typhaBM100 + organic, random = ~1|plot, data = global_data),
+  lme(aquatics ~ H + NO3_N + organic + waterDepth, random = ~1|plot, data = global_data)
+)
+summary(pmod1)
+
+# Adding in missing connections
+pmod2 <- psem(
+  lme(typhaBM100 ~ waterDepth + H + unVegCover, random = ~1|plot, data = global_data), 
+  lme(graminoids ~ H + typhaBM100, random = ~1|plot, data = global_data),
+  lme(detritusAW ~ typhaBM100 + NH4_N + waterDepth + H, random = ~1|plot, data = global_data),
+  lme(richness ~ H + NO3_N + typhaBM100 + organic + graminoids, random = ~1|plot, data = global_data),
+  lme(aquatics ~ H + NO3_N + organic + waterDepth + graminoids, random = ~1|plot, data = global_data)
+)
+summary(pmod2)
+
+# Taking out insignificant terms
+pmod3 <- psem(
+  lme(typhaBM100 ~ unVegCover, random = ~1|plot, data = global_data), 
+  lme(graminoids ~ H + unVegCover + waterDepth, random = ~1|plot, data = global_data),
+  lme(detritusAW ~ typhaBM100 + NH4_N + waterDepth, random = ~1|plot, data = global_data),
+  lme(richness ~ H + NO3_N + typhaBM100 + organic + graminoids, random = ~1|plot, data = global_data),
+  lme(aquatics ~ H + NO3_N + waterDepth + graminoids, random = ~1|plot, data = global_data)
+)
+summary(pmod3) # 0.562
+
+pmod4 <- psem(
+  lme(typhaBM100 ~ unVegCover, random = ~1|plot, data = global_data), 
+  lme(graminoids ~ H + unVegCover + waterDepth + typhaBM100, random = ~1|plot, data = global_data),
+  lme(detritusAW ~ typhaBM100 + NH4_N + waterDepth, random = ~1|plot, data = global_data),
+  lme(richness ~ H + NO3_N + typhaBM100 + organic + graminoids, random = ~1|plot, data = global_data),
+  lme(aquatics ~ H + NO3_N + waterDepth + graminoids, random = ~1|plot, data = global_data)
+)
+summary(pmod4) # 0.825
+
+# Best model = no missing terms or bad relationships. No graminoids response. 
+pmod5 <- psem(
+  lme(typhaBM100 ~ unVegCover + graminoids + year, random = ~1|plot, data = global_data), 
+  lme(log(detritusAW+1) ~ typhaBM100 + NH4_N + waterDepth + year, random = ~1|plot, data = global_data),
+  lme(richness ~ H + NO3_N + graminoids + typhaBM100 + organic + year, random = ~1|plot, data = global_data),
+  lme(log(aquatics) ~ H + NO3_N + graminoids + waterDepth, random = ~1|plot, data = global_data)
+)
+summary(pmod5) # 0.669
+
+# Adjusting for the loged responses
+pmod6 <- psem(
+  lme(typhaBM100 ~ unVegCover + graminoids, random = ~1|plot, data = global_data), 
+  lme(log(detritusAW+1) ~ waterDepth + typhaBM100, random = ~1|plot, data = global_data),
+  lme(richness ~ H + NO3_N + graminoids + typhaBM100 + organic, random = ~1|plot, data = global_data),
+  lme(log(aquatics+1) ~ H + NO3_N + graminoids + waterDepth + typhaBM100 + richness, random = ~1|plot, data = global_data)
+)
+summary(pmod6) # .768
+
+
+############################################################
+
+# Adding in year - best model!!!!!!!!!!!
+pmod7 <- psem(
+  lme(typhaBM100 ~ unVegCover + graminoids + NO3_N + organic + year, random = ~1|plot, data = global_data), 
+  lme(log(detritusAW+1) ~ waterDepth + typhaBM100, random = ~1|plot, data = global_data),
+  lme(richness ~ H + NO3_N + graminoids + typhaBM100 + organic, random = ~1|plot, data = global_data),
+  lme(log(aquatics+1) ~ H + NO3_N + graminoids + waterDepth + typhaBM100 + richness + year, random = ~1|plot, data = global_data)
+)
+summary(pmod7) # .803
+
+
+### Checking model assumptions...
+lmt <- glm(typhaBM100 ~ unVegCover + graminoids, data = global_data)
+hist(lmt$residuals, breaks = 20)# 3 outliers so normal
+plot(lmt)
+par(mfrow = c(2, 2))
+
+lmd <- glm(log(detritusAW+1) ~ typhaBM100 + NH4_N + waterDepth, data = subset(global_data, detritusAW != 99))
+hist(lmd$residuals)
+plot(lmd) # good enough
+
+lmr <- glm(richness ~ H + NO3_N + graminoids + typhaBM100 + organic, data = global_data)
+plot(lmr) # Looks ok
+hist(lmr$residuals) # normal
+
+lma <- glm(log(aquatics) ~ H + NO3_N + graminoids + waterDepth, data = subset(global_data, aquatics != 0))
+plot(lma) # Lots of zeros
+hist(lma$residuals, breaks = 20) # Heavy tailed
+```
+
+### Piecewise SEM based on mod7 - best model is mod 9
+```{r}
+# # Adding in year - best model!!!!!!!!!!!
+# pmod7 <- psem(
+#   lme(typhaBM100 ~ unVegCover + graminoids + NO3_N + organic + year, random = ~1|plot, data = global_data), 
+#   lme(log(detritusAW+1) ~ waterDepth + typhaBM100, random = ~1|plot, data = global_data),
+#   lme(richness ~ H + NO3_N + graminoids + typhaBM100 + organic, random = ~1|plot, data = global_data),
+#   lme(log(aquatics+1) ~ H + NO3_N + graminoids + waterDepth + typhaBM100 + richness + year, random = ~1|plot, data = global_data)
+# )
+# summary(pmod7) # .803
+
+pmod8 <- psem(
+    lme(typhaBM100 ~ totalVegCover + year, random = ~1|plot, data = global_data),
+    lme(log(detritusAW+1) ~ waterDepth + typhaBM100, random = ~1|plot, data = global_data),
+    lme(richness ~ H + NO3_N + graminoids + typhaBM100 + organic, random = ~1|plot, data = global_data),
+    lme(log(aquatics+1) ~ H + NO3_N + graminoids + waterDepth + typhaBM100 + richness + year, random = ~1|plot, data = global_data)
+)
+summary(pmod8)
+
+
+#new bestest model
+pmod9 <- psem(
+  lme(typhaBM100 ~ totalVegCover + year, random = ~1|plot, data = global_data),
+  lme(log(detritusAW+1) ~ waterDepth + typhaBM100, random = ~1|plot, data = global_data),
+  lme(H ~ richness + NO3_N + graminoids + typhaBM100 + organic, random = ~1|plot, data = global_data),
+  lme(log(aquatics+1) ~ H + NO3_N + graminoids + waterDepth + typhaBM100 + richness, random = ~1|plot, data = global_data)
+)
+summary(pmod9)
+############check assumptions mod9######################
+par(mfrow = c(2, 2))
+lmt <- glm(typhaBM100 ~ totalVegCover + year, data = global_data)
+hist(lmt$residuals, breaks = 20)# 3 outliers so normal
+plot(lmt)
+
+lmt <- glm(H ~ richness + NO3_N + graminoids + typhaBM100 + organic, data = global_data)
+hist(lmt$residuals, breaks = 20)# 3 outliers so normal
+plot(lmt)
+```
+
+### Global Longitudinal SEM - didn't work
+```{r}
+
+attach(long_data)
+lmod1 <- 'YR2016_typhaBM100 ~ YR2015_unVegCover + YR2015_graminoids  + YR2015_typhaBM100
+          YR2017_typhaBM100 ~ YR2016_graminoids + YR2016_typhaBM100
+          YR2018_typhaBM100 ~ YR2017_unVegCover + YR2017_graminoids + YR2017_typhaBM100
+          logYR2016_detritusAW ~ YR2015_typhaBM100 + YR2015_NH4_N + YR2015_waterDepth + logYR2015_detritusAW
+          logYR2017_detritusAW ~ YR2016_typhaBM100 + YR2016_NH4_N + YR2016_waterDepth + logYR2016_detritusAW 
+          logYR2018_detritusAW ~ YR2017_typhaBM100 + YR2017_NH4_N + YR2017_waterDepth + logYR2017_detritusAW  
+          YR2016_richness ~ YR2015_H + YR2015_NO3_N + YR2015_graminoids + YR2015_typhaBM100 + YR2015_organic + YR2015_richness  
+          YR2017_richness ~ YR2016_H + YR2016_NO3_N + YR2016_graminoids + YR2016_typhaBM100 + YR2016_organic + YR2016_richness 
+          YR2018_richness ~ YR2017_H + YR2017_graminoids + YR2017_typhaBM100 + YR2017_organic + YR2017_richness 
+          logYR2016_aquatics ~ YR2015_H + YR2015_NO3_N + YR2015_graminoids + YR2015_waterDepth + logYR2015_aquatics
+          logYR2017_aquatics ~ YR2016_H + YR2016_NO3_N + YR2016_graminoids + YR2016_waterDepth + logYR2016_aquatics
+          logYR2018_aquatics ~ YR2017_H + YR2017_graminoids + YR2017_waterDepth + logYR2017_aquatics
+          YR2016_typhaBM100 ~~ logYR2016_detritusAW
+          YR2016_typhaBM100 ~~ YR2016_richness
+          YR2016_typhaBM100 ~~ logYR2016_aquatics
+          logYR2016_detritusAW ~~ YR2016_richness
+          logYR2016_detritusAW ~~ logYR2016_aquatics
+          YR2016_richness ~~ logYR2016_aquatics
+          YR2017_typhaBM100 ~~ logYR2017_detritusAW
+          YR2017_typhaBM100 ~~ YR2017_richness
+          YR2017_typhaBM100 ~~ logYR2017_aquatics
+          logYR2017_detritusAW ~~ YR2017_richness
+          logYR2017_detritusAW ~~ logYR2017_aquatics
+          YR2017_richness ~~ logYR2017_aquatics
+          YR2018_typhaBM100 ~~ logYR2018_detritusAW
+          YR2018_typhaBM100 ~~ YR2018_richness
+          YR2018_typhaBM100 ~~ logYR2018_aquatics
+          logYR2018_detritusAW ~~ YR2018_richness
+          logYR2018_detritusAW ~~ logYR2018_aquatics
+          YR2018_richness ~~ logYR2018_aquatics'
+modl1 = sem(lmod1, data = long_data, estimator="mlm")
+summary(modl1)
+
+
+lmod16 <- 'YR2016_typhaBM100 ~ YR2015_unVegCover
+          logYR2016_detritusAW ~ YR2015_NH4_N + YR2015_waterDepth
+          YR2016_richness ~ YR2015_H + YR2015_NO3_N + YR2015_organic
+          logYR2016_aquatics ~ YR2015_H + YR2015_NO3_N + YR2015_waterDepth
+          YR2016_typhaBM100 ~~ logYR2016_detritusAW
+          YR2016_typhaBM100 ~~ YR2016_richness
+          YR2016_typhaBM100 ~~ logYR2016_aquatics
+          logYR2016_detritusAW ~~ YR2016_richness
+          logYR2016_detritusAW ~~ logYR2016_aquatics
+          YR2016_richness ~~ logYR2016_aquatics'
+modl16 = sem(lmod16, data = long_data, estimator="mlm")
+summary(modl16)
+```
+
+Best model:
+pmod9 <- psem(
+  lme(typhaBM100 ~ totalVegCover + year, random = ~1|plot, data = global_data),
+  lme(log(detritusAW+1) ~ waterDepth + typhaBM100, random = ~1|plot, data = global_data),
+  lme(H ~ richness + NO3_N + graminoids + typhaBM100 + organic, random = ~1|plot, data = global_data),
+  lme(log(aquatics+1) ~ H + NO3_N + graminoids + waterDepth + typhaBM100 + richness, random = ~1|plot, data = global_data)
+)
+
+
+
