@@ -159,6 +159,9 @@ ggplot(subset(Consult, year == 2012), aes(x = trmt, y = Typha, fill = trmt)) + g
 
 ggplot(subset(Consult, year == 2013), aes(x = trmt, y = Typha, fill = trmt)) + geom_boxplot() + ggtitle("Treatment on Typha 2013")
 
+summary(aov(Typha~trmt, data = subset(Consult, year == 2011)))
+summary(aov(Typha~trmt, data = subset(Consult, year == 2012)))
+summary(aov(Typha~trmt, data = subset(Consult, year == 2013)))
 ```
 
 ### Piecewise SEM
