@@ -81,3 +81,14 @@ plot(waterDepth, utrvul) # more utrvul as waterDepth increases. Could definitely
 ```
 Assumption 2: Normally distributed responses
 
+```{r}
+library(ggplot2)
+ggplot(subset(Consult, year == 2011), aes(x = trmt, y = Typha, fill = trmt)) + geom_boxplot() + ggtitle("Treatment on Typha 2011")
+ggplot(subset(Consult, year == 2012), aes(x = trmt, y = Typha, fill = trmt)) + geom_boxplot() + ggtitle("Treatment on Typha 2012")
+ggplot(subset(Consult, year == 2013), aes(x = trmt, y = Typha, fill = trmt)) + geom_boxplot() + ggtitle("Treatment on Typha 2013")
+
+
+
+
+
+```
